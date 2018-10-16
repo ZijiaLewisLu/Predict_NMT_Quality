@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Predicting the Quality of Machine Translation | Zijia Lu</title>
+<meta name="generator" content="Jekyll v3.8.4" />
+<meta property="og:title" content="Predicting the Quality of Machine Translation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<meta property="og:description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<link rel="canonical" href="http://localhost:4000/" />
+<meta property="og:url" content="http://localhost:4000/" />
+<meta property="og:site_name" content="Zijia Lu" />
+<script type="application/ld+json">
+{"name":"Zijia Lu","description":"Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.","@type":"WebSite","url":"http://localhost:4000/","headline":"Predicting the Quality of Machine Translation","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Zijia Lu" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><!--     <a class="site-title" rel="author" href="/">Zijia Lu</a> -->
+    <p class="site-title" rel="author" href="/">Zijia Lu</p><!--       <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label> -->
+
+<!--         <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/">Predicting the Quality of Machine Translation</a></div> -->
+      <!-- </nav> --></div>
+</header>
+
+<!-- 
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ZijiaLewisLu"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ZijiaLewisLu</span></a></li></ul>
+</div> --><main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Predicting the Quality of Machine Translation</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="" itemprop="datePublished">
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <!-- HTML CODE -->
+<script type="text/javascript" async="" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        processEscapes: true
+      }
+    });
+</script>
+
+<style type="text/css">
+
+    table, table th, table td {
+        border: none;
+    } 
+
+    .post-title{
+         font-style: normal;
+         font-size: 43px !important;
+    }
+
+    h1{
+        font-style: italic;
+        font-size: 38px !important;       
+    }
+
+    blockquote{
+        font-style: normal !important;
+        /*font-weight: 600 !important;*/
+    }
+</style>
+
+<!--POST-->
+
+<blockquote style="font-weight:600">This post summarizes part of the work I did during my study away at NYU at 2017. I was guided by Tian Wang and Prof. Kyunghyun Cho.</blockquote>
+
+<p><img src="images\overview\page01.jpg" alt="overview" /></p>
+
+<h1 id="introduction">Introduction</h1>
+
+<p>Deep neural network has shown surprising overall performance on many tasks. However, deep neural network is not perfect. <em>A good model still makes wrong or even absurd mistakes on some predictions</em> and trusting the model blindly can lead to catastrophic results, such as the tragical accident of the first Tesla auto-driving car collision. Therefore, effort has been made to predict the quality of a model’s predictions so a user knows when to trust the model and when to intervene.</p>
+
+<p>In this post, we explore the task of predicting the quality of <strong>Neural Machine Translation</strong>. It is important because neural machine translator has been used more and more frequently but the users themselves often cannot assess the translation quality. For example, a traveler may be translating a sentence into a language that he does not speak. Conventional methods use <em>Model Confidence</em> as an indicator of the translation quality, such as the probability scores (softmax scores) of the translations or the variance in the probability scores in Bayesian method.</p>
+
+<p>We propose a novel <strong>Meta-Predictor</strong> network that directly learns to predict the translation quality. For a trained translator, we propose a method to estimate its translation quality based on its perplexity on the ground-truth translations. The Meta-Predictor, adapted the CNN structure in 
+<a href="#ref1">[1]</a>, 
+takes the states of the translator’s encoder as input and tries to regress the quality. There are several <em>advantages</em> of our method:</p>
+<ol>
+  <li>The Meta-Predictor has better performance than the Model Confidence based methods.</li>
+  <li>The Meta-Predictor can correct some of the bias in the translator. If some source sentences have the patterns that trigger the translator to give confident but absurd results, Meta-Predictor can detect them.</li>
+  <li>The Meta-Predictor can be constructed for any pretrained translators without the need to retrain them.</li>
+  <li>The Meta-Predictor only requires finishing the translator’s encoding step. As the decoding step is often more computation-costly than encoding, a user can opt to not decode if the translation is predicted to be bad.<br />
+<!-- In comparision with our model, there are two conventional way to predict the translation quality. --></li>
+</ol>
+
+<!-- Recently, aside from only focusing on making more accuracy predictions, efforts has also been devoted to make models predict the quality of their predictions. Therefore, people know when to trust the model's predictions and when to intervene. Considering the first accident of Tesla auto-driving car and recent development in adversarial attack, _there won't be enough to elaborate on the importance of this task._
+ -->
+<!-- In this post, we show a novel Meta-predictor method for Neural Machine Translation (NMT). given a source sentence, translate to a target sentence.
+
+A frequently used indicator of the translation quality is models' confidence in their outputs, such as the probability scores (softmax score) of the translated sentences. 
+ -->
+<!-- A frequently employed method to the task is model uncertainty.  -->
+
+<!-- Model uncertainty is a frequently-employed method.  -->
+<!-- Via Bayesian method, a variational network can be built which not only outputs a prediction but also the uncertainty in the prediction. [citation].  -->
+<!-- *Bayesian Deep Network* (BDN) method takes the variance of models' outputs as a measurement of model uncertainty. Yarin[] proposes Variational Dropout for RNN. By replacing the standard dropout in RNN with Variational Dropout, a Bayesian Deep Network can be easily constructed. In inference time, the models run several forward passes with dropout enabled to compute the variance. It can be slow for complex RNN models.   -->
+<!--  One defect of the method is it requires to run several forward passes to estimate the variance in output. Considering the RNN in NMT models, it can be computation costly.  -->
+
+<!-- In this post, we take a slightly different approach: instead of uncertainty, we want to estimate how diffcult a input is to a model. The advantage of our approach is the ground-truth label of a source sentence's difficulty can be estimated by the loss of the translation, while the ground truth for uncertainty is unknown. Our meta-predictor is simple and shows superior performance. -->
+
+<p>In the following sections, I will first introduce the conventional Neural Machine Translator and Model Confidence methods. I will then introduce the Meta-Predictor and show the experimental results in the end.</p>
+
+<h1 id="neural-machine-translation-and-model-confidence">Neural Machine Translation and Model Confidence</h1>
+<table class="image" border="0">
+<caption align="bottom">Fig.2: Neural Machine Translator</caption>
+<tr><td><img src="images\nmt\page01.jpg" alt="Fig.2: Neural Machine Translator" border="0" /></td></tr>
+</table>
+
+<p>The task of Neural Machine Translation (<em>NMT</em>) is to translate a sentence from a source language (source sentence) to a sentence in a target language (target sentence). In this section, I will briefly introduce the standard translator and Bayesian translator and how to compute their confidence of translations.</p>
+
+<p>A <strong>Standard Translator</strong> has two components, a Encoder $f$ and a Decoder $g$. $f$ usually includes a word embedding function and several stacked LSTM layers. It receives one word of the source sentence at each timestep and encodes it to a  hidden state. The last timestep’s cell state of LSTM is often considered as an overall summarization of the source sentence.
+$g$ also has a word mapping function and LSTM layers. In addition, it has a softmax layer and often an attention unit. It receives the encoder’s hidden and cell states and decodes out one word at each timestep. The attention unit computes which part of the source sentence to attend to for each timestep and the softmax layer computes a probability distribution over the vocabulary of target language. Fig.2 shows a general translator structure without attention unit.</p>
+
+<p>Given a pair of source and target sentences $(X, Y)$. $X$ and $Y$ represents sets of words: 
+<script type="math/tex">X=\{x_j\}_{j=1}^{|X|}, ~ Y=\{y_j\}_{j=1}^{|Y|}</script>.
+At one encoding timestep $i$, the output of $f$ is</p>
+
+<script type="math/tex; mode=display">h_i, c_i = f(x_i, c_{i-1})</script>
+
+<p>where $h_i$ and $c_i$ denote the hidden state and cell state of LSTM. At a decoding timestep $j$, $g$ predicts 
+<script type="math/tex">P(y_j|y_1, y_2, ...,y_{j-1};X)</script>.</p>
+
+<p>In inference, the model generates a translation of the source sentence, $\hat Y$, and we have</p>
+
+<script type="math/tex; mode=display">P(\hat Y | X ) = {\displaystyle \prod_{j=1}^{|\hat Y|} P(\hat y_j| \hat y_1, ..., \hat y_{j-1}; X)  }</script>
+
+<p><script type="math/tex">P( \hat Y | X )</script> 
+can be treated as a direct indicator of the model’s confidence.</p>
+
+<p>A <strong>Bayesian Translator</strong> employs Variational Dropout proposed in <a href="#ref2">[2]</a>. It can be easily constructed by (1) replacing the standard dropout between LSTM layers with Variational Dropout; (2) adding a special dropout to the word embedding function. I will not go into much detail here. In short, the Variational Dropout uses the same dropout mask at all timesteps and the dropout of the word embedding function randomly sets a word embedding vector to $0$. Different dropout masks represent different sets of weights sampled from the weight distribution.</p>
+
+<!-- [blog](https://becominghuman.ai/learning-note-dropout-in-recurrent-networks-part-1-57a9c19a2307?gi=4772a5b8c9b9) -->
+<p>In inference, the bayesian translator runs several forward passes with dropout enabled to obtain a set 
+<script type="math/tex">\{P_{w_t}(\hat Y| X) \}_{t=1}^T</script>.
+Thus the variance <script type="math/tex">V[P(\hat Y|X)]</script> can be computed on the set. The larger the variance, the less certain the model is about its translation. Therefore, <script type="math/tex">-V[P(\hat Y|X)]</script> is also an indicator of the model confidence.</p>
+
+<p>It should be noticed that, computing both 
+<script type="math/tex">P(\hat Y|X)</script>
+and 
+$-V[P(\hat Y|X)]$ 
+requires to finish the decoding step. As decoding usually involves beam search, it can be very slow. 
+In the next section, we introduce a Meta-Predictor network which can predict the translation quality relying only on the outputs of encoding and has better performance than 
+<script type="math/tex">P(\hat Y|X)</script>
+and 
+$-V[P(\hat Y|X)]$.</p>
+
+<h1 id="meta-predictor">Meta-Predictor</h1>
+<p>We aim to constructing a Meta-Predictor for a trained Neural Machine Translator $(f,g)$. Given a pair of source sentence and target sentence $(X, Y)$, the Meta-Predictor should be able to predict the quality of the translation $\hat Y$ only based on the output of the translator’s encoder, $f(X)$.</p>
+
+<p>To achieve this goal, we need a dataset of tuples of $(X, Y, q)$. $q$ denotes the quality of the translator’s translation of $X$. Then the Meta-Predictor is trained on this dataset, learning to regress $q$ based on $f(X)$. During the training, the encoder $f$ is freezed. I will first introduce how we compute $q$ then the structure of Meta-Predictor.</p>
+
+<h3 id="translation-quality-q">Translation Quality $q$</h3>
+<p>Given a new dataset of pairs of $(X, Y)$ and a translator $(f,g)$, we estimate $q$ based on <em>Perplexity</em>, which is a widely used measurement of the translator’s performance. Perplexity is computed by</p>
+
+<script type="math/tex; mode=display">ppl_Y = \sqrt[|Y|]{\frac{1}{P(Y|X)}}</script>
+
+<p>In information theory, it is related to, given a ground-truth word in $Y$, the number of words the translator considers as equally probable. A low perplexity means, except the ground-truth word, the translator considers few other words are correct. Therefore, a low perplexity also indicates the translation will be good. 
+<!-- ### normalize the perplexity  -->
+Perplexity is not bounded and has a skewed distribution in practice, making the regression unstable. Thus we compute a new indicator $q$ based on perplexity.</p>
+
+<!-- a long-tail distribution, ranging from 0 to 100. Thus we compute a new indicator of difficulty $d_Y$ based on perplexity. -->
+<!-- Therefore we normalizes the score.  -->
+
+<script type="math/tex; mode=display">q = Sigmoid\left( -\frac{log\left(ppl_Y\right) - \mu_{log}}{\sigma_{log}} \right)</script>
+
+<p>where $\mu_{log}$ and $\sigma_{log}$ is the mean and standard deviation of $log\left(ppl_Y\right)$. The goal of the Meta-Predictor is to estimate $q$ based on $f(X)$.</p>
+
+<h3 id="network-structure">Network Structure</h3>
+
+<table class="image" border="0">
+<caption align="bottom">Fig.3: the structure of Meta-Predictor</caption>
+<tr><td><img src="images/network_v3/page01.jpg" alt="Fig.3: the structure of Meta-Predictor" border="0" /></td></tr>
+</table>
+<!-- the goal -->
+
+<!--We will first introduce the network structure then the loss function and training procedure. -->
+<p>Given a source sentence $X$, the Meta-Predictor receives three inputs from the encoder: the word embeddings <script type="math/tex">\{e_i\}_{i=1}^{|X|}</script>, the hidden states <script type="math/tex">\{h_i\}_{i=1}^{|X|}</script> and the last cell states $c_{|X|}$ of LSTM in $f$.</p>
+
+<p>The forward pass of the meta-predictor includes three steps:</p>
+
+<ol>
+  <li>
+    <p>generate 2,3,4-gram representations of the source sentence using temporal CNNs and Max Pooling.</p>
+  </li>
+  <li>
+    <p>concatenate these representations with the cell state to form the final representation.</p>
+  </li>
+  <li>
+    <p>pass the representation through 3 fully-connected layers to predict $\hat q$.</p>
+  </li>
+</ol>
+
+<p><em>Step (1) :</em> First of all, let $t_i = [h_i; e_i]$ denote the concatenation of the word embedding of the $i$-th word
+and the $i$-th hidden state. It represents all the information about the $i$-th word extracted by the encoder. Then <script type="math/tex">T = \{t_i\}_{i=1}^{|X|}</script>. To generate a $n$-gram representation, a temporal CNN of window size $n$ is applied on $T$. That is, the output of location $i$ is</p>
+
+<script type="math/tex; mode=display">g^n_i = CNN(t_i, ..., t_{i+n})</script>
+
+<p>$g^n_i$ is a summarized representation of a $n$-word phrase. By applying the CNN to all locations, we can obtain a set <script type="math/tex">\{g^n_i\}_{i=1}^{|X|-n+1}</script>
+. In the end, max pooling is applied to <script type="math/tex">\{g^n_i\}</script> to obtain a final <script type="math/tex">\hat g^n</script> of the whole sentence.</p>
+
+<script type="math/tex; mode=display">\hat g^n = max\left( g^n_1, ..., g^n_{|X|-n+1} \right)</script>
+
+<!-- explain the meaning of n-gram-->
+<p>By varying $n$, we take account of phrases of different lengths. In our setting, we choose $n$ to be 2, 3, 4.</p>
+
+<p><em>Step (2)</em> and <em>Step (3)</em>: the final representation is the concatenation of $\hat g^2$, $\hat g^3$, $\hat g^4$ and the last cell state from encoder 
+<script type="math/tex">c_{|X|}</script>
+. It is then fed through 3 fully-connected layers to obtain a prediction.</p>
+
+<p>In the end, the Meta-Predictor is trained by optimizing L2 loss with SGD</p>
+
+<script type="math/tex; mode=display">L(X) = ||  q - \hat q ||^2</script>
+
+<h1 id="experiments">Experiments</h1>
+
+<h3 id="dataset-and-training-procedure">Dataset and Training Procedure</h3>
+<p>We trained two translators, a standard translator and a bayesian translator and one Meta-Predictor for each translator. We used <a href="http://www.statmt.org/wmt15/translation-task.html">WMT15</a> dataset and translated from English to German. We took three corpus for training and validating: <em>Europarl v7, Common Crawl corpus</em> and <em>New Commentary v10</em>. <em>Newstest13</em> was used for test. We separated the training dataset for the translators and Meta-Predictors: firstly a translator was trained on a half of the training corpus using Adam. It was then freezed and a Meta-Predictor for this translator was trained on the other half of the corpus using SGD.</p>
+
+<p>For translators, we used <a href="https://github.com/OpenNMT/OpenNMT-py">OpenNMT-py</a> framework and followed the data preprocess procedure and network structure described in this <a href="http://forum.opennmt.net/t/training-english-german-wmt15-nmt-engine/29">post</a>. Specifically, the vocabulary sizes of both English and Germane were set to 5000 and the size of word embeddings was 500. Each Encoders and decoders had two stacked LSTM layers with hidden size equal to 500. The decoders had attention units and softmax layers in addition.</p>
+
+<p>The two Meta-Predictors for the standard and bayesian translators had the same structures. Each had three temporal CNNs of window size 2,3,4 to generate $n$-gram representations. Each CNN has 500 filters. After the CNNs and MaxPooling layers, there were 3 Fully-Connected layers with hidden size equal to 1500.</p>
+
+<p>In the end, on the test corpus, we collected the translations of both translators and the predictions of their Meta-Predictors. To generate translations, the decoding step uses beam search with beam size equal to 5.</p>
+
+<h3 id="evaluation-protocol">Evaluation Protocol</h3>
+<p>We use <a href="https://en.wikipedia.org/wiki/BLEU">Bilingual Evaluation Understudy (BLEU) score</a> to evaluate the quality of corpus of translations. A high BLEU score means better translations. The BLEU score of the standard translator on the test corpus is 56.04. The score of the bayesian translator is 55.81. 
+<!-- As they are trained with only half of the training data, the scores is lower than  --></p>
+
+<p>To measure how good a indicator correlates with the translation quality, we plotted <em>calibration curve</em>. That is, we sort all translations $\hat Y$ descendingly by the indicator scores. We graduatelly removed the translations with the lowest scores (the sentences of bad quality) and kept measuring the corpus quality of the translations left. As more and more bad translations are removed, the quality of the sentences left is expected to increase. The calibration curve is the curve of the percentage of sentences removed and the BLEU score of corpus of the sentences left. For a reasonable indicator, the curve should be upward sloping.</p>
+
+<h3 id="q-and-translation-quality">$q$ and Translation Quality</h3>
+<p>Firstly we show the calibration curve of the ground-truth $q$. It can be observed that $q$ is indeed a good indicator of translation quality. It is valid to train a Meta-Predictor based on $q$.</p>
+
+<table class="image" border="0" cellpadding="0">
+<tr>
+    <td style="margin: 0;padding: 0">
+        <img src="images\rslt\std_rslt0.png" border="0" />
+    </td>
+    <td style="margin: 0;padding: 0">
+        <img src="images\rslt\vd_rslt0.png" border="0" />
+    </td>
+</tr>
+</table>
+
+<h3 id="compare-meta-predictor-and-model-confidence">Compare Meta-Predictor and Model Confidence</h3>
+<p>Here we compare the calibration curves of 
+<script type="math/tex">P(Y|X)</script>, 
+<script type="math/tex">-V[P(Y|X)]</script> and the Meta-Predictor, denoted by $MP$ in plots.</p>
+
+<p>For the standard translator, we compare $MP$ with 
+$P(\hat Y|X)$
+. For the bayesian translator, we compare with both 
+$P(\hat Y|X)$ 
+and 
+$-V[P(\hat Y|X)]$.</p>
+
+<table class="image" border="0" cellpadding="0">
+<tr>
+    <td style="margin: 0;padding: 0">
+        <img src="images\rslt\std_rslt1.png" border="0" />
+    </td>
+    <td style="margin: 0;padding: 0">
+        <img src="images\rslt\vd_rslt1.png" border="0" />
+    </td>
+</tr>
+</table>
+
+<p>It can be observed that:</p>
+
+<ol>
+  <li>
+    <p>Meta-Predictor has higher accuracy in predicting the translation quality. For both translators, the curve of $MP$ is above those of $P(\hat Y|X)$ 
+and 
+<script type="math/tex">-V[P(\hat Y|X)]</script>. 
+The Meta-Predictor’s predictions better correlate with the translation quality.</p>
+  </li>
+  <li>
+    <p>Both the curves of $P(\hat Y|X)$ 
+and 
+<script type="math/tex">-V[P(\hat Y|X)]</script> are downward sloping at some point. The curve of $MP$ is more consistent. It is upward sloping and only has a few negligible downward fluctuations.</p>
+  </li>
+  <li>
+    <p>Comparing the curve of $q$ above and the curve of $MP$, there is still a big gap. It is inevitable because the gap represents the knowledge the translator does not learn and the unpredictable mistakes. A Meta-Predictor can be as good as $q$ only if it accurately knows the ground-truth translations. In that case, it is a perfect translator itself.</p>
+  </li>
+</ol>
+
+<h1 id="conclusion">Conclusion</h1>
+<p>The proposed Meta-Predictor has shown superior accuracy on predicting the quality of machine translations. It can be constructed for any translators without the need to retrain them. Moreover, it relies only on the output of translator’s encoder. It also can be fastly computed as it utilizes CNN rather RNN and can be speeded-up by parallel computing. In the end, the gap between the calibration curves of the Meta-Predictor and the ground-truth $q$ shows the possibility of future improvement.</p>
+
+<h1 id="reference">Reference</h1>
+<p><a id="ref1" href="https://arxiv.org/abs/1408.5882" target="_blank">[1] Yoon Kim: Convolutional Neural Networks for Sentence Classification</a></p>
+
+<p><a id="ref2" href="https://arxiv.org/abs/1512.05287" target="_blank">[2] 
+Yarin Gal, Zoubin Ghahramani: A Theoretically Grounded Application of Dropout in Recurrent Neural Networks</a></p>
+
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main>
+
+    <!--<footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Zijia Lu</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Zijia Lu</li><li><a class="u-email" href="mailto:zl1052@nyu.edu">zl1052@nyu.edu</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ZijiaLewisLu"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ZijiaLewisLu</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+-->
+
+  </body>
+
+</html>
